@@ -1,7 +1,13 @@
 from handlers.resolver import reply_gallery_info
 from loguru import logger
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
-from telegram.ext import CallbackQueryHandler, CommandHandler, ContextTypes
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update, WebAppInfo
+from telegram.ext import (
+    CallbackQueryHandler,
+    CommandHandler,
+    ContextTypes,
+    MessageHandler,
+    filters,
+)
 from utils.service_api import (
     ServiceAPIError,
     get_login_url,
@@ -13,9 +19,16 @@ from utils.service_api import (
 )
 
 
-def _login_keyboard(bot_username: str) -> InlineKeyboardMarkup:
+def _login_keyboard(bot_username: str, bot_id: int) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(
-        [[InlineKeyboardButton("🔑 Telegram 登录", url=get_login_url(bot_username))]]
+        [
+            [
+                InlineKeyboardButton(
+                    "🔑 Telegram 登录",
+                    web_app=WebAppInfo(url=get_login_url(bot_username, bot_id)),
+                )
+            ]
+        ]
     )
 
 
@@ -24,7 +37,9 @@ async def _reply_need_login(
 ) -> None:
     await update.effective_message.reply_text(
         text,
-        reply_markup=_login_keyboard(context.application.bot.username),
+        reply_markup=_login_keyboard(
+            context.application.bot.username, context.application.bot.id
+        ),
     )
 
 
@@ -69,10 +84,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 
 async def login(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    await update.effective_message.reply_text(
-        "点击下方按钮完成 Telegram 授权登录：",
-        reply_markup=_login_keyboard(context.application.bot.username),
-    )
+    await _reply_need_login(update, context, "点击下方按钮完成 Telegram 授权登录：")
 
 
 async def handle_checkin(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -181,8 +193,26 @@ async def open_login(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await query.answer()
     await query.edit_message_text(
         "点击下方按钮完成登录：",
-        reply_markup=_login_keyboard(context.application.bot.username),
+        reply_markup=_login_keyboard(
+            context.application.bot.username, context.application.bot.id
+        ),
     )
+
+
+async def handle_web_app_data(
+    update: Update, context: ContextTypes.DEFAULT_TYPE
+) -> None:
+    """处理 Mini App 通过 WebAppData 发送的登录 token"""
+    data = update.effective_message.web_app_data.data
+    tg_user = update.effective_message.from_user
+    if data.startswith("sk-"):
+        set_user_api_key(tg_user.id, data)
+        await update.effective_message.reply_text(
+            "✅ 登录成功，账号已绑定到当前 Telegram 会话。"
+        )
+        logger.info(f"{tg_user.full_name}（{tg_user.id}）通过 Mini App 完成登录绑定")
+    else:
+        await update.effective_message.reply_text("❌ 登录失败：无效的 token 格式。")
 
 
 async def help(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -198,3 +228,6 @@ def register(app):
     app.add_handler(CommandHandler("help", help))
     app.add_handler(CallbackQueryHandler(reset_apikey, pattern=r"^reset_apikey$"))
     app.add_handler(CallbackQueryHandler(open_login, pattern=r"^open_login$"))
+    app.add_handler(
+        MessageHandler(filters.StatusUpdate.WEB_APP_DATA, handle_web_app_data)
+    )

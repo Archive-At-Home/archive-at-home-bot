@@ -129,7 +129,10 @@ async def handle_checkin(update: Update, context: ContextTypes.DEFAULT_TYPE):
             [
                 InlineKeyboardButton(
                     "🔑 登录并签到",
-                    url=get_login_url(context.application.bot.username),
+                    url=get_login_url(
+                        context.application.bot.username,
+                        context.application.bot.id,
+                    ),
                 )
             ]
         ]

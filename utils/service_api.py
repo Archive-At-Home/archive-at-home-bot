@@ -51,8 +51,13 @@ def set_user_api_key(user_id: int, api_key: str) -> None:
     _save_tokens(db)
 
 
-def get_login_url(bot_username: str) -> str:
-    params = urlencode({"redirect_url": f"https://t.me/{bot_username}"})
+def get_login_url(bot_username: str, bot_id: int) -> str:
+    params = urlencode(
+        {
+            "redirect_url": f"https://t.me/{bot_username}",
+            "botId": bot_id,
+        }
+    )
     return f"{API_BASE}/auth/telegram/login?{params}"
 
 
