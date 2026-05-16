@@ -12,6 +12,7 @@ from telegram import (
     Update,
 )
 from telegram.ext import CallbackQueryHandler, ContextTypes, InlineQueryHandler
+
 from utils.resolve import get_gallery_info
 from utils.service_api import (
     ServiceAPIError,
@@ -129,10 +130,7 @@ async def handle_checkin(update: Update, context: ContextTypes.DEFAULT_TYPE):
             [
                 InlineKeyboardButton(
                     "🔑 登录并签到",
-                    url=get_login_url(
-                        context.application.bot.username,
-                        context.application.bot.id,
-                    ),
+                    url=get_login_url(context.application.bot.username),
                 )
             ]
         ]

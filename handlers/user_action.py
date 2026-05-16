@@ -1,13 +1,12 @@
-from handlers.resolver import reply_gallery_info
 from loguru import logger
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update, WebAppInfo
 from telegram.ext import (
     CallbackQueryHandler,
     CommandHandler,
     ContextTypes,
-    MessageHandler,
-    filters,
 )
+
+from handlers.resolver import reply_gallery_info
 from utils.service_api import (
     ServiceAPIError,
     get_login_url,
@@ -24,10 +23,16 @@ def _login_keyboard(bot_username: str, bot_id: int) -> InlineKeyboardMarkup:
         [
             [
                 InlineKeyboardButton(
-                    "🔑 Telegram 登录",
+                    "🔑 Mini App 登录（推荐）",
                     web_app=WebAppInfo(url=get_login_url(bot_username, bot_id)),
                 )
-            ]
+            ],
+            [
+                InlineKeyboardButton(
+                    "🔗 网页登录",
+                    url=get_login_url(bot_username),
+                ),
+            ],
         ]
     )
 
@@ -199,22 +204,6 @@ async def open_login(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
 
-async def handle_web_app_data(
-    update: Update, context: ContextTypes.DEFAULT_TYPE
-) -> None:
-    """处理 Mini App 通过 WebAppData 发送的登录 token"""
-    data = update.effective_message.web_app_data.data
-    tg_user = update.effective_message.from_user
-    if data.startswith("sk-"):
-        set_user_api_key(tg_user.id, data)
-        await update.effective_message.reply_text(
-            "✅ 登录成功，账号已绑定到当前 Telegram 会话。"
-        )
-        logger.info(f"{tg_user.full_name}（{tg_user.id}）通过 Mini App 完成登录绑定")
-    else:
-        await update.effective_message.reply_text("❌ 登录失败：无效的 token 格式。")
-
-
 async def help(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("点击这里查看帮助内容：\nhttps://t.me/EH_ArBot/64")
 
@@ -228,6 +217,3 @@ def register(app):
     app.add_handler(CommandHandler("help", help))
     app.add_handler(CallbackQueryHandler(reset_apikey, pattern=r"^reset_apikey$"))
     app.add_handler(CallbackQueryHandler(open_login, pattern=r"^open_login$"))
-    app.add_handler(
-        MessageHandler(filters.StatusUpdate.WEB_APP_DATA, handle_web_app_data)
-    )

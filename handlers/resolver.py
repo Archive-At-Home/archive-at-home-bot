@@ -1,9 +1,10 @@
 import re
 
-from config.config import cfg
 from loguru import logger
 from telegram import CopyTextButton, InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import CallbackQueryHandler, ContextTypes, MessageHandler, filters
+
+from config.config import cfg
 from utils.resolve import get_gallery_info
 from utils.service_api import (
     ServiceAPIError,
@@ -78,10 +79,7 @@ async def download(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 [
                     InlineKeyboardButton(
                         "🔑 登录后下载",
-                        url=get_login_url(
-                            context.application.bot.username,
-                            context.application.bot.id,
-                        ),
+                        url=get_login_url(context.application.bot.username),
                     )
                 ]
             ]

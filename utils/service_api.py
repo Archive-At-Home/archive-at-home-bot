@@ -4,8 +4,9 @@ from pathlib import Path
 from urllib.parse import urlencode
 
 import httpx
-from config.config import cfg
 from loguru import logger
+
+from config.config import cfg
 
 
 class ServiceAPIError(Exception):
@@ -51,13 +52,13 @@ def set_user_api_key(user_id: int, api_key: str) -> None:
     _save_tokens(db)
 
 
-def get_login_url(bot_username: str, bot_id: int) -> str:
-    params = urlencode(
-        {
-            "redirect_url": f"https://t.me/{bot_username}",
-            "botId": bot_id,
-        }
-    )
+def get_login_url(bot_username: str, bot_id: int | None = None) -> str:
+    params_dict = {
+        "redirect_url": f"https://t.me/{bot_username}",
+    }
+    if bot_id is not None:
+        params_dict["botId"] = bot_id
+    params = urlencode(params_dict)
     return f"{API_BASE}/auth/telegram/login?{params}"
 
 
