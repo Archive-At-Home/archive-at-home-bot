@@ -11,7 +11,6 @@ with open(CONFIG_PATH, "r", encoding="utf-8") as f:
 
 # Runtime-safe defaults for stateless frontend mode.
 cfg.setdefault("proxy", None)
-cfg.setdefault("eh_cookie", "")
 cfg.setdefault("BOT_TOKEN", "")
 
 cfg.setdefault("AD", {})

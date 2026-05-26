@@ -74,7 +74,7 @@ async def inline_query(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     logger.info(f"解析画廊 {query}")
     try:
-        text, _, thumb, _ = await get_gallery_info(gid, token)
+        text, _, thumb = await get_gallery_info(gid, token)
     except Exception as e:
         logger.warning(f"Inline 模式解析画廊失败: {query}，错误: {e}")
         results = [

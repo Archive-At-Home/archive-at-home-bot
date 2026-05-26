@@ -21,7 +21,7 @@ async def reply_gallery_info(
     logger.info(f"解析画廊 {url}")
 
     try:
-        text, has_spoiler, thumb, _ = await get_gallery_info(gid, token)
+        text, has_spoiler, thumb = await get_gallery_info(gid, token)
     except Exception as e:
         await msg.edit_text("❌ 画廊解析失败，请检查链接或稍后再试")
         logger.error(f"画廊 {url} 解析失败：{e}")

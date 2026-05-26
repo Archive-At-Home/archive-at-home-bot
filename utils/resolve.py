@@ -1,7 +1,6 @@
 from collections import defaultdict
 from datetime import datetime
 
-from utils.ehentai import get_gdata, get_user_GP_cost
 from utils.http_client import http
 
 tag_map = defaultdict(lambda: {"name": "", "data": {}})
@@ -28,8 +27,15 @@ async def fetch_tag_map(_):
 
 async def get_gallery_info(gid, token):
     """获取画廊基础信息 + 缩略图"""
-    user_GP_cost = await get_user_GP_cost(gid, token)
-    gallery_info = await get_gdata(gid, token)
+    response = await http.post(
+        "https://e-hentai.org/api.php",
+        json={"method": "gdata", "gidlist": [[gid, token]], "namespace": 1},
+    )
+    gallery_info = response.json().get("gmetadata")[0]
+
+    user_GP_cost = (int(gallery_info["filesize"] / 1e6 * 20) + 1) * (
+        3 if datetime.now().timestamp() - int(gallery_info["posted"]) > 31536000 else 1
+    )
 
     new_tags = defaultdict(list)
     for item in gallery_info["tags"]:
@@ -63,5 +69,4 @@ async def get_gallery_info(gid, token):
         text,
         gallery_info["category"] != "Non-H",
         gallery_info["thumb"].replace("s.exhentai", "ehgt"),
-        user_GP_cost,
     )
