@@ -1,5 +1,5 @@
 from loguru import logger
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update, WebAppInfo
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import (
     CallbackQueryHandler,
     CommandHandler,
@@ -7,45 +7,15 @@ from telegram.ext import (
 )
 
 from handlers.resolver import reply_gallery_info
+from utils.login_prompt import build_login_markup, reply_need_login
 from utils.service_api import (
     ServiceAPIError,
-    get_login_url,
     get_me,
     get_user_api_key,
     reset_api_key,
     set_user_api_key,
     user_checkin,
 )
-
-
-def _login_keyboard(bot_username: str, bot_id: int) -> InlineKeyboardMarkup:
-    return InlineKeyboardMarkup(
-        [
-            [
-                InlineKeyboardButton(
-                    "🔑 Mini App 登录（推荐）",
-                    web_app=WebAppInfo(url=get_login_url(bot_username, bot_id)),
-                )
-            ],
-            [
-                InlineKeyboardButton(
-                    "🔗 网页登录",
-                    url=get_login_url(bot_username),
-                ),
-            ],
-        ]
-    )
-
-
-async def _reply_need_login(
-    update: Update, context: ContextTypes.DEFAULT_TYPE, text: str
-) -> None:
-    await update.effective_message.reply_text(
-        text,
-        reply_markup=_login_keyboard(
-            context.application.bot.username, context.application.bot.id
-        ),
-    )
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -78,7 +48,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
             return
 
     if update.effective_chat.type == "private" and not get_user_api_key(tg_user.id):
-        await _reply_need_login(
+        await reply_need_login(
             update,
             context,
             "请先点击下方按钮完成登录授权，随后即可按原方式发送画廊链接获取下载。",
@@ -89,7 +59,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 
 async def login(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    await _reply_need_login(update, context, "点击下方按钮完成 Telegram 授权登录：")
+    await reply_need_login(update, context, "点击下方按钮完成 Telegram 授权登录：")
 
 
 async def handle_checkin(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -97,7 +67,7 @@ async def handle_checkin(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     user_id = update.effective_message.from_user.id
     api_key = get_user_api_key(user_id)
     if not api_key:
-        await _reply_need_login(update, context, "请先登录后再签到。")
+        await reply_need_login(update, context, "请先登录后再签到。")
         return
 
     try:
@@ -128,7 +98,7 @@ async def myinfo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user_id = update.effective_message.from_user.id
     api_key = get_user_api_key(user_id)
     if not api_key:
-        await _reply_need_login(update, context, "请先登录后再查看账户信息。")
+        await reply_need_login(update, context, "请先登录后再查看账户信息。")
         return
 
     try:
@@ -198,14 +168,16 @@ async def open_login(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await query.answer()
     await query.edit_message_text(
         "点击下方按钮完成登录：",
-        reply_markup=_login_keyboard(
+        reply_markup=build_login_markup(
             context.application.bot.username, context.application.bot.id
         ),
     )
 
 
 async def help(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("点击这里查看帮助内容：\nhttps://t.me/EH_ArBot/64")
+    await update.message.reply_text(
+        "点击这里查看帮助内容：\nhttps://docs.archive-at-home.org/"
+    )
 
 
 def register(app):

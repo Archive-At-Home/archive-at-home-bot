@@ -16,7 +16,6 @@ from telegram.ext import CallbackQueryHandler, ContextTypes, InlineQueryHandler
 from utils.resolve import get_gallery_info
 from utils.service_api import (
     ServiceAPIError,
-    get_login_url,
     get_user_api_key,
     user_checkin,
 )
@@ -126,18 +125,7 @@ async def handle_checkin(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     api_key = get_user_api_key(user_id)
     if not api_key:
-        keyboard = [
-            [
-                InlineKeyboardButton(
-                    "🔑 登录并签到",
-                    url=get_login_url(context.application.bot.username),
-                )
-            ]
-        ]
-
-        await query.edit_message_text(
-            "请先登录后再签到", reply_markup=InlineKeyboardMarkup(keyboard)
-        )
+        await query.edit_message_text("请先私聊 Bot 登录后再签到")
         return
 
     try:

@@ -5,10 +5,10 @@ from telegram import CopyTextButton, InlineKeyboardButton, InlineKeyboardMarkup,
 from telegram.ext import CallbackQueryHandler, ContextTypes, MessageHandler, filters
 
 from config.config import cfg
+from utils.login_prompt import reply_need_login
 from utils.resolve import get_gallery_info
 from utils.service_api import (
     ServiceAPIError,
-    get_login_url,
     get_user_api_key,
     parse_gallery,
 )
@@ -74,19 +74,7 @@ async def download(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     api_key = get_user_api_key(user_id)
     if not api_key:
-        keyboard = InlineKeyboardMarkup(
-            [
-                [
-                    InlineKeyboardButton(
-                        "🔑 登录后下载",
-                        url=get_login_url(context.application.bot.username),
-                    )
-                ]
-            ]
-        )
-        await update.effective_message.reply_text(
-            "⚠️ 请先登录后再获取下载链接", reply_markup=keyboard
-        )
+        await reply_need_login(update, context, "⚠️ 请先登录后再获取下载链接")
         return
 
     _, gid, token = query.data.split("|")
