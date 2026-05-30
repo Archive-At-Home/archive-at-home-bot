@@ -77,6 +77,7 @@ async def _call_api(
 ) -> dict:
     headers = {
         "Authorization": f"Bearer {api_key}",
+        "X-Client": cfg.get("NEW_SERVICE", {}).get("client"),
         "Content-Type": "application/json",
     }
     async with httpx.AsyncClient(

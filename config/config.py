@@ -19,3 +19,4 @@ cfg["AD"].setdefault("url", "")
 
 cfg.setdefault("NEW_SERVICE", {})
 cfg["NEW_SERVICE"].setdefault("base_url", "http://127.0.0.1:8080")
+cfg["NEW_SERVICE"].setdefault("client", "")

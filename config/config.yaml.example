@@ -5,3 +5,5 @@ AD:
   url:
 NEW_SERVICE:
   base_url: http://127.0.0.1:8080
+  # Bot 标识，最大长度 64，仅接受 `a-z`、`0-9`、`-`、`_`、`.`，请按给定格式填写
+  client: bot/tg-xxx
