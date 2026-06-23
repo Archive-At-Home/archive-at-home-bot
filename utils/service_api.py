@@ -91,12 +91,14 @@ async def _call_api(
         return response.json()
 
 
-async def parse_gallery(api_key: str, gid: str, token: str) -> dict:
+async def parse_gallery(
+    api_key: str, gid: str, token: str, force: bool = False
+) -> dict:
     return await _call_api(
         "POST",
         "/api/v1/parse",
         api_key,
-        {"gallery_id": gid, "gallery_key": token},
+        {"gallery_id": gid, "gallery_key": token, "force": force},
     )
 
 

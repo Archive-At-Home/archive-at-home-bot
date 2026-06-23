@@ -77,10 +77,12 @@ async def download(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await reply_need_login(update, context, "⚠️ 请先登录后再获取下载链接")
         return
 
-    _, gid, token = query.data.split("|")
+    parts = query.data.split("|")
+    _, gid, token = parts[:3]
+    force = len(parts) > 3 and parts[3] == "force"
 
     caption = re.sub(
-        r"\n\n❌ 下载链接获取失败.*$",
+        r"\n\n(?:✅ 下载链接获取成功(?:（缓存）)?|❌ 下载链接获取失败.*)$",
         "",
         update.effective_message.caption,
     )
@@ -94,7 +96,7 @@ async def download(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     error_text = "服务端未返回下载链接"
     try:
-        result = await parse_gallery(api_key, gid, token)
+        result = await parse_gallery(api_key, gid, token, force)
         d_url = result.get("archive_url")
         if not d_url:
             error_text = result.get("error", error_text)
@@ -115,7 +117,11 @@ async def download(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 [
                     InlineKeyboardButton(
                         "🌐 跳转画廊", url=f"https://e-hentai.org/g/{gid}/{token}/"
-                    )
+                    ),
+                    InlineKeyboardButton(
+                        "🔄 重新获取下载链接",
+                        callback_data=f"download|{gid}|{token}|force",
+                    ),
                 ],
                 [
                     InlineKeyboardButton(
