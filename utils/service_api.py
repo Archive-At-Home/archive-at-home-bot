@@ -83,7 +83,6 @@ async def _call_api(
     async with httpx.AsyncClient(
         base_url=API_BASE,
         timeout=45,
-        proxy=cfg.get("proxy") or None,
     ) as client:
         response = await client.request(method, path, headers=headers, json=body)
         if response.status_code >= 400:

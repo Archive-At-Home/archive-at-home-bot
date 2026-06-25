@@ -1,9 +1,15 @@
+import html
+import re
 from collections import defaultdict
 from datetime import datetime
 
+from config.config import cfg
 from utils.http_client import http
 
 tag_map = defaultdict(lambda: {"name": "", "data": {}})
+
+GALLERY_URL_RE = re.compile(r"https://e[-x]hentai\.org/g/(\d+)/([0-9a-f]{10})", re.I)
+SAMPLE_URL_RE = re.compile(r"https://e[-x]hentai\.org/s/[0-9a-f]{10}/\d+-\d+", re.I)
 
 
 async def fetch_tag_map(_):
@@ -25,8 +31,28 @@ async def fetch_tag_map(_):
         )
 
 
+async def resolve_sample_to_gallery(sample_url: str):
+    sample_url = sample_url.replace("e-hentai.org", "exhentai.org", 1)
+    response = await http.get(sample_url, follow_redirects=True)
+    page = response.text
+
+    match = GALLERY_URL_RE.search(page)
+    if not match:
+        raise ValueError("未在 /s/ 页面中找到画廊链接")
+    gid, token = match.group(1), match.group(2)
+
+    thumb = None
+    photo_proxy = cfg.get("PHOTO_PROXY_URL")
+    if photo_proxy and (thumb_match := re.search(
+        r'id="img"[^>]*\ssrc="([^"]+)"', page, re.I
+    )):
+        thumb = photo_proxy + html.unescape(thumb_match.group(1))
+
+    return f"https://exhentai.org/g/{gid}/{token}/", gid, token, thumb
+
+
 async def get_gallery_info(gid, token):
-    """获取画廊基础信息 + 缩略图"""
+    """获取画廊基础信息"""
     response = await http.post(
         "https://e-hentai.org/api.php",
         json={"method": "gdata", "gidlist": [[gid, token]], "namespace": 1},

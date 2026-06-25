@@ -1,7 +1,8 @@
-from config.config import cfg
-from handlers import BOT_COMMANDS, register_all_handlers
 from loguru import logger
 from telegram.ext import Application
+
+from config.config import cfg
+from handlers import BOT_COMMANDS, register_all_handlers
 from utils.resolve import fetch_tag_map
 
 logger.add("log.log", encoding="utf-8")
@@ -12,11 +13,7 @@ async def post_init(app):
 
 
 telegram_app = (
-    Application.builder()
-    .token(cfg["BOT_TOKEN"])
-    .post_init(post_init)
-    .proxy(cfg["proxy"])
-    .build()
+    Application.builder().token(cfg["BOT_TOKEN"]).post_init(post_init).build()
 )
 
 register_all_handlers(telegram_app)

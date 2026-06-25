@@ -1,5 +1,6 @@
-﻿proxy:
+﻿EH_COOKIE: ipb_member_id=xxxxx; ipb_pass_hash=xxxxx; igneous=xxxxx
 BOT_TOKEN:
+PHOTO_PROXY_URL: 
 AD:
   text:
   url:

@@ -10,8 +10,9 @@ with open(CONFIG_PATH, "r", encoding="utf-8") as f:
     cfg = yaml.safe_load(f) or {}
 
 # Runtime-safe defaults for stateless frontend mode.
-cfg.setdefault("proxy", None)
+cfg.setdefault("EH_COOKIE", "")
 cfg.setdefault("BOT_TOKEN", "")
+cfg.setdefault("PHOTO_PROXY_URL", None)
 
 cfg.setdefault("AD", {})
 cfg["AD"].setdefault("text", "")
