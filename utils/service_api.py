@@ -105,9 +105,5 @@ async def get_me(api_key: str) -> dict:
     return await _call_api("GET", "/api/v1/me", api_key)
 
 
-async def user_checkin(api_key: str) -> dict:
-    return await _call_api("POST", "/api/v1/me/checkin", api_key)
-
-
 async def reset_api_key(api_key: str) -> dict:
     return await _call_api("POST", "/api/v1/me/reset-key", api_key)

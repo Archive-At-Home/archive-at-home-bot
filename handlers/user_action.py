@@ -14,7 +14,6 @@ from utils.service_api import (
     get_user_api_key,
     reset_api_key,
     set_user_api_key,
-    user_checkin,
 )
 
 
@@ -60,37 +59,6 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 async def login(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await reply_need_login(update, context, "点击下方按钮完成 Telegram 授权登录：")
-
-
-async def handle_checkin(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """处理每日签到命令"""
-    user_id = update.effective_message.from_user.id
-    api_key = get_user_api_key(user_id)
-    if not api_key:
-        await reply_need_login(update, context, "请先登录后再签到。")
-        return
-
-    try:
-        data = await user_checkin(api_key)
-    except ServiceAPIError as e:
-        if e.status_code == 401:
-            await update.effective_message.reply_text(
-                "登录已失效，请重新使用 /login 授权。"
-            )
-            return
-        await update.effective_message.reply_text(f"❌ 签到失败：{e.message}")
-        return
-
-    if data.get("success"):
-        await update.effective_message.reply_text(
-            f"✅ {data.get('message', '签到成功')}\n"
-            f"💰 获得：{data.get('reward', 0)} GP\n"
-            f"📊 当前余额：{data.get('balance', 0)} GP"
-        )
-    else:
-        await update.effective_message.reply_text(
-            f"📌 {data.get('message', '你今天已经签过到了~')}"
-        )
 
 
 async def myinfo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -184,7 +152,6 @@ def register(app):
     """注册命令处理器"""
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("login", login))
-    app.add_handler(CommandHandler("checkin", handle_checkin))
     app.add_handler(CommandHandler("myinfo", myinfo))
     app.add_handler(CommandHandler("help", help))
     app.add_handler(CallbackQueryHandler(reset_apikey, pattern=r"^reset_apikey$"))

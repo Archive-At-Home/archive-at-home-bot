@@ -10,16 +10,14 @@ from telegram import (
     InputTextMessageContent,
     Update,
 )
-from telegram.ext import CallbackQueryHandler, ContextTypes, InlineQueryHandler
+from telegram.ext import ContextTypes, InlineQueryHandler
 
-from config.config import cfg
 from utils.resolve import (
     GALLERY_URL_RE,
     SAMPLE_URL_RE,
     get_gallery_info,
     resolve_sample_to_gallery,
 )
-from utils.service_api import ServiceAPIError, get_user_api_key, user_checkin
 
 
 async def inline_query(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -29,27 +27,11 @@ async def inline_query(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     # 没输入时提示
     if not query:
-        keyboard = InlineKeyboardMarkup(
-            [
-                [
-                    InlineKeyboardButton(
-                        "签到", callback_data=f"checkin|{update.effective_user.id}"
-                    )
-                ]
-            ]
-        )
         results = [
             InlineQueryResultArticle(
                 id=str(uuid.uuid4()),
                 title="请输入 eh/ex 链接以获取预览",
                 input_message_content=InputTextMessageContent("请输入链接"),
-            ),
-            InlineQueryResultArticle(
-                id=str(uuid.uuid4()),
-                title="我的信息（签到）",
-                input_message_content=InputTextMessageContent("点击按钮进行签到"),
-                description="签到并查看自己的信息",
-                reply_markup=keyboard,
             ),
         ]
 
@@ -136,36 +118,5 @@ async def inline_query(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.inline_query.answer(results)
 
 
-async def handle_checkin(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    query = update.callback_query
-
-    user_id = update.effective_user.id
-    if user_id != int(query.data.split("|")[1]):
-        await query.answer("是你的东西吗？你就点！")
-        return
-    await query.answer()
-
-    api_key = get_user_api_key(user_id)
-    if not api_key:
-        await query.edit_message_text("请先私聊 Bot 登录后再签到")
-        return
-
-    try:
-        data = await user_checkin(api_key)
-    except ServiceAPIError as e:
-        await query.edit_message_text(f"签到失败：{e.message}")
-        return
-
-    if data.get("success"):
-        text = (
-            f"✅ {data.get('message', '签到成功')}\n"
-            f"💰 当前余额：{data.get('balance', 0)} GP"
-        )
-    else:
-        text = f"📌 {data.get('message', '你今天已经签过到了~')}"
-    await query.edit_message_text(text)
-
-
 def register(app):
     app.add_handler(InlineQueryHandler(inline_query))
-    app.add_handler(CallbackQueryHandler(handle_checkin, pattern=r"^checkin"))
