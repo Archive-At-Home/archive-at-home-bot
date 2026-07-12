@@ -46,7 +46,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
             )
             return
 
-    if update.effective_chat.type == "private" and not get_user_api_key(tg_user.id):
+    if not get_user_api_key(tg_user.id):
         await reply_need_login(
             update,
             context,

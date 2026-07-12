@@ -26,6 +26,12 @@ def build_login_markup(bot_username: str, bot_id: int) -> InlineKeyboardMarkup:
 async def reply_need_login(
     update: Update, context: ContextTypes.DEFAULT_TYPE, text: str
 ) -> None:
+    if update.effective_chat.type != "private":
+        await update.effective_message.reply_text(
+            f"{text}\n\n请私聊机器人完成注册登录：@{context.application.bot.username}"
+        )
+        return
+
     await update.effective_message.reply_text(
         text,
         reply_markup=build_login_markup(
