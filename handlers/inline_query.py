@@ -7,10 +7,11 @@ from telegram import (
     InlineQueryResultArticle,
     InlineQueryResultPhoto,
     InlineQueryResultsButton,
+    InputMediaPhoto,
     InputTextMessageContent,
     Update,
 )
-from telegram.ext import ContextTypes, InlineQueryHandler
+from telegram.ext import ChosenInlineResultHandler, ContextTypes, InlineQueryHandler
 
 from utils.resolve import (
     GALLERY_URL_RE,
@@ -35,7 +36,7 @@ async def inline_query(update: Update, context: ContextTypes.DEFAULT_TYPE):
             ),
         ]
 
-        await update.inline_query.answer(results, button=button, cache_time=0)
+        await update.inline_query.answer(results, button=button)
         return
 
     gallery_match = GALLERY_URL_RE.fullmatch(query.rstrip("/"))
@@ -78,7 +79,7 @@ async def inline_query(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     logger.info(f"解析画廊 {gallery_url}")
     try:
-        text, _, api_thumb = await get_gallery_info(gid, token)
+        text, is_h, api_thumb = await get_gallery_info(gid, token)
     except Exception as e:
         logger.warning(f"Inline 模式解析画廊失败: {gallery_url}，错误: {e}")
         results = [
@@ -103,11 +104,21 @@ async def inline_query(update: Update, context: ContextTypes.DEFAULT_TYPE):
         ]
     )
 
+    photo_url = sample_thumb or api_thumb
+    result_id = str(uuid.uuid4())
+
+    if is_h:
+        context.bot_data.setdefault("__inline_spoiler", {})[result_id] = {
+            "photo_url": photo_url,
+            "caption": text,
+            "reply_markup": keyboard,
+        }
+
     results = [
         InlineQueryResultPhoto(
-            id=str(uuid.uuid4()),
-            photo_url=sample_thumb or api_thumb,
-            thumbnail_url=sample_thumb or api_thumb,
+            id=result_id,
+            photo_url=photo_url,
+            thumbnail_url=photo_url,
             title="画廊预览",
             caption=text,
             reply_markup=keyboard,
@@ -115,8 +126,28 @@ async def inline_query(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
     ]
 
-    await update.inline_query.answer(results)
+    await update.inline_query.answer(results, cache_time=0)
+
+
+async def on_chosen_result(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    chosen = update.chosen_inline_result
+    stored = context.bot_data.get("__inline_spoiler", {})
+    data = stored.pop(chosen.result_id, None)
+    if not data:
+        return
+
+    await context.bot.edit_message_media(
+        inline_message_id=chosen.inline_message_id,
+        media=InputMediaPhoto(
+            media=data["photo_url"],
+            caption=data["caption"],
+            parse_mode="HTML",
+            has_spoiler=True,
+        ),
+        reply_markup=data["reply_markup"],
+    )
 
 
 def register(app):
     app.add_handler(InlineQueryHandler(inline_query))
+    app.add_handler(ChosenInlineResultHandler(on_chosen_result))
