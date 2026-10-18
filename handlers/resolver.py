@@ -2,6 +2,7 @@ import re
 
 from loguru import logger
 from telegram import CopyTextButton, InlineKeyboardButton, InlineKeyboardMarkup, Update
+from telegram.error import BadRequest
 from telegram.ext import CallbackQueryHandler, ContextTypes, MessageHandler, filters
 
 from config.config import cfg
@@ -56,14 +57,25 @@ async def reply_gallery_info(
             )
         )
 
-    await msg.delete()
-    await update.effective_message.reply_photo(
-        photo=thumb or api_thumb,
+    photo = thumb or api_thumb
+    photo_proxy = cfg.get("PHOTO_PROXY_URL")
+    options = dict(
         caption=text,
         reply_markup=InlineKeyboardMarkup(keyboard),
         has_spoiler=has_spoiler,
         parse_mode="HTML",
     )
+    try:
+        await update.effective_message.reply_photo(photo=photo, **options)
+    except BadRequest as e:
+        fetch_error = any(error in str(e).lower() for error in (
+            "wrong type of the web page content", "failed to get http url content"
+        ))
+        if not fetch_error or not photo_proxy or photo.startswith(photo_proxy):
+            raise
+        logger.warning(f"画廊 {url} 封面获取失败，使用图片代理重试：{e}")
+        await update.effective_message.reply_photo(photo=photo_proxy + photo, **options)
+    await msg.delete()
 
 
 async def resolve_gallery(update: Update, context: ContextTypes.DEFAULT_TYPE):
