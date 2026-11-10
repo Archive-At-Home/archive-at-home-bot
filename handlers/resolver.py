@@ -1,3 +1,4 @@
+import html
 import re
 
 from loguru import logger
@@ -114,9 +115,9 @@ async def download(update: Update, context: ContextTypes.DEFAULT_TYPE):
     force = len(parts) > 3 and parts[3] == "force"
 
     caption = re.sub(
-        r"\n\n(?:✅ 下载链接获取成功(?:（缓存）)?|❌ 下载链接获取失败.*)$",
+        r"\n\n(?:⏳ 正在获取下载链接，请稍等\.\.\.|✅ 下载链接获取成功(?:（缓存）)?|❌ 下载链接获取失败：[\s\S]*)$",
         "",
-        update.effective_message.caption,
+        update.effective_message.caption_html,
     )
 
     await update.effective_message.edit_caption(
@@ -171,7 +172,7 @@ async def download(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
     else:
         await update.effective_message.edit_caption(
-            caption=f"{caption}\n\n❌ 下载链接获取失败：{error_text}",
+            caption=f"{caption}\n\n❌ 下载链接获取失败：{html.escape(error_text)}",
             reply_markup=update.effective_message.reply_markup,
             parse_mode="HTML",
         )
